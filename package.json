@@ -1,4 +1,13 @@
-
-name = "cricket-matches-backend"
-main = "src/index.js"
-compatibility_date = "2025-08-21"
+{
+  "name": "cricket-matches-backend",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.32.0"
+  }
+}
