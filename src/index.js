@@ -1,56 +1,35 @@
 export default {
-  async fetch(request) {
-    const target = "https://zplay1.in/pb/api/v1/events/matches/4";
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
 
-    // Handle preflight CORS
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET,OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type"
-        }
-      });
+    // Example API route
+    if (url.pathname === "/api/hello") {
+      return Response.json({ message: "Hello from Cloudflare Workers 🎉" });
     }
 
-    try {
-      const response = await fetch(target, {
-        headers: {
-          "User-Agent": "Mozilla/5.0",   // Pretend browser
-          "Accept": "application/json"   // Force JSON
-        }
-      });
-
-      const text = await response.text(); // read raw
-      let data;
+    // Proxy external API (CORS fixed)
+    if (url.pathname === "/api/proxy") {
+      const target = url.searchParams.get("url");
+      if (!target) {
+        return Response.json({ error: "Missing ?url=" }, { status: 400 });
+      }
 
       try {
-        data = JSON.parse(text); // try parse JSON
-      } catch (err) {
-        return new Response(JSON.stringify({ error: "Invalid JSON", raw: text }), {
-          status: 500,
+        const res = await fetch(target);
+        const data = await res.text();
+
+        return new Response(data, {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": res.headers.get("content-type") || "application/json",
             "Access-Control-Allow-Origin": "*"
           }
         });
+      } catch (err) {
+        return Response.json({ error: err.message }, { status: 500 });
       }
-
-      return new Response(JSON.stringify(data), {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
-        }
-      });
-
-    } catch (err) {
-      return new Response(JSON.stringify({ error: "Failed to fetch API", message: err.message }), {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
-        }
-      });
     }
+
+    // Default 404
+    return new Response("Not Found", { status: 404 });
   }
-}
+};
