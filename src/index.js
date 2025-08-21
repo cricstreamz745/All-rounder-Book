@@ -1,35 +1,23 @@
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request) {
     const url = new URL(request.url);
+    const target = url.searchParams.get("url");
 
-    // Example API route
-    if (url.pathname === "/api/hello") {
-      return Response.json({ message: "Hello from Cloudflare Workers 🎉" });
+    if (!target) {
+      return new Response("Missing ?url= parameter", { status: 400 });
     }
 
-    // Proxy external API (CORS fixed)
-    if (url.pathname === "/api/proxy") {
-      const target = url.searchParams.get("url");
-      if (!target) {
-        return Response.json({ error: "Missing ?url=" }, { status: 400 });
-      }
-
-      try {
-        const res = await fetch(target);
-        const data = await res.text();
-
-        return new Response(data, {
-          headers: {
-            "Content-Type": res.headers.get("content-type") || "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
-        });
-      } catch (err) {
-        return Response.json({ error: err.message }, { status: 500 });
-      }
+    try {
+      const resp = await fetch(target);
+      return new Response(resp.body, {
+        status: resp.status,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": resp.headers.get("content-type") || "text/plain"
+        }
+      });
+    } catch (err) {
+      return new Response("Error fetching: " + err.message, { status: 500 });
     }
-
-    // Default 404
-    return new Response("Not Found", { status: 404 });
   }
 };
